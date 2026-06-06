@@ -51,6 +51,7 @@ export async function POST(request: Request) {
     console.log("[RoastCard mock send]", {
       from,
       to: recipientEmail,
+      bcc: senderEmail,
       replyTo: senderEmail,
       subject,
     });
@@ -62,6 +63,7 @@ export async function POST(request: Request) {
     const { error } = await resend.emails.send({
       from,
       to: recipientEmail,
+      bcc: senderEmail,
       replyTo: senderEmail,
       subject,
       html,

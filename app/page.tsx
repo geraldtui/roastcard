@@ -83,7 +83,7 @@ export default function Home() {
             Send a birthday roast 🎂
           </h1>
           <p className="mt-2 text-sm text-zinc-500">
-            Four details, one button. The roast is a surprise.
+            The roast is a surprise.
           </p>
         </div>
 

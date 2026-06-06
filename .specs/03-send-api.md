@@ -10,7 +10,7 @@ As a sender, I want a server endpoint that validates my input and emails a roast
 
 ## Context
 
-**Why:** A single serverless route holds the Resend secret and performs the send (`ROASTCARD_SPEC.md` §2, §7). It validates input, drops honeypot submissions, picks a roast, renders the card, and sends with a fixed verified-domain From plus the sender's email as Reply-To.
+**Why:** A single serverless route holds the Resend secret and performs the send (`ROASTCARD_SPEC.md` §2, §7). It validates input, drops honeypot submissions, picks a roast, renders the card, and sends with a fixed verified-domain From plus the sender's email as Reply-To. The sender is also silently copied (BCC) so both sender and recipient witness the roast reveal.
 
 **Related:**
 - `01-roast-content.md` (`getRandomRoast`)
@@ -33,10 +33,10 @@ As a sender, I want a server endpoint that validates my input and emails a roast
 1. If honeypot `company` is non-empty → return `200 { ok: true }` and do nothing (silent drop).
 2. Validate all four fields present + recipient/sender email formats → on failure `400 { ok: false, error }`.
 3. Pick random roast (interpolated) + render `RoastCard` to HTML.
-4. Send via Resend: `from` = `"{senderName} via RoastCard <FROM_EMAIL>"`, `to` = recipient email, `replyTo` = sender email, `subject` = `"🎂 Happy Birthday, {recipientName}!"`, `html` = rendered card.
+4. Send via Resend: `from` = `"{senderName} via RoastCard <FROM_EMAIL>"`, `to` = recipient email, `bcc` = sender email (so the sender gets a copy of the reveal without the recipient seeing it), `replyTo` = sender email, `subject` = `"🎂 Happy Birthday, {recipientName}!"`, `html` = rendered card.
 5. On success → `200 { ok: true }`. On Resend failure → `500 { ok: false, error }` (safe message).
 
-**Mock mode:** If `RESEND_API_KEY` is unset, skip the real Resend call, log the would-be email server-side, and return `200 { ok: true, mocked: true }` so the flow is testable locally.
+**Mock mode:** If `RESEND_API_KEY` is unset, skip the real Resend call, log the would-be email server-side (including `bcc`), and return `200 { ok: true, mocked: true }` so the flow is testable locally.
 
 ## Acceptance Criteria
 
@@ -55,10 +55,10 @@ As a sender, I want a server endpoint that validates my input and emails a roast
   - When posted
   - Then it returns `400 { ok: false, error }` and no email is sent
 
-- [ ] **AC4**: From/Reply-To identity is correct.
+- [ ] **AC4**: From/Reply-To/BCC identity is correct.
   - Given a valid send
   - When the Resend call is built
-  - Then `from` uses the fixed `FROM_EMAIL` with sender display name and `replyTo` is the sender's typed email
+  - Then `from` uses the fixed `FROM_EMAIL` with sender display name, `replyTo` is the sender's typed email, and `bcc` is the sender's typed email (so the sender receives a copy)
 
 - [ ] **AC5**: Mock mode works without a key.
   - Given `RESEND_API_KEY` is unset
@@ -69,3 +69,9 @@ As a sender, I want a server endpoint that validates my input and emails a roast
   - Given Resend returns an error
   - When sending
   - Then the route returns `500 { ok: false, error }` without leaking internals
+
+## Changelog
+
+- **2026-06-06** — Added sender BCC: the sender's email is now BCC'd on the card
+  so both sender and recipient see the roast reveal. Updated send behavior (step
+  4), mock-mode logging, and AC4. (Status: Verified → Approved → Verified)
